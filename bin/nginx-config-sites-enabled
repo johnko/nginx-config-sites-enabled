@@ -38,6 +38,8 @@ SCRIPTVERSION=141231-020436
 NGINXCONF=/usr/local/etc/nginx/nginx.conf
 
 configure_nginx() {
+  sitesavail="${NGINXCONF%/*}/sites-available"
+  sitesdir="${NGINXCONF%/*}/sites-enabled"
   cat >"${NGINXCONF}" <<EOF
 # nginx config file
 user nobody;
@@ -56,11 +58,9 @@ http {
 EOF
   chmod 644 "${NGINXCONF}"
   #
-  sitesavail="${NGINXCONF%/*}/sites-available"
   install -d -m 755 "${sitesavail}"
   chmod 755 "${sitesavail}"
   #
-  sitesdir="${NGINXCONF%/*}/sites-enabled"
   install -d -m 755 "${sitesdir}"
   chmod 755 "${sitesdir}"
 }
