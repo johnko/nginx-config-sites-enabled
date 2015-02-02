@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150202-001314
+SCRIPTVERSION=150202-001800
 
 ######################################################################
 # Variables
@@ -72,8 +72,8 @@ upstream sources {
 server {
   listen 443 ssl;
   server_name localhost.my.domain;
-  ssl_certificate bundle.crt;
-  ssl_certificate_key server.key;
+  ssl_certificate ssl/bundle.crt;
+  ssl_certificate_key ssl/server.key;
   ssl_ciphers HIGH:!aNULL:!MD5;
   ssl_prefer_server_ciphers on;
   location / {
@@ -89,4 +89,24 @@ server {
 EOF
 }
 
+openssl_generate() {
+  ssldir="${NGINXCONF%/*}/ssl"
+  [ -d "${ssldir}" ] || install -d -m 755 "${ssldir}"
+  umask 077
+  if [ ! -e "${ssldir}/ssl.key" ]; then
+    openssl genrsa -out "${ssldir}/ssl.key" 4096
+    chmod 600 "${ssldir}/ssl.key"
+  fi
+  if [ ! -e "${ssldir}/ssl.csr" ]; then
+    yes '' | openssl req -new -key "${ssldir}/ssl.key" -out "${ssldir}/ssl.csr"
+    chmod 600 "${ssldir}/ssl.csr"
+  fi
+  umask 022
+  if [ ! -e "${ssldir}/ssl.crt" ]; then
+    openssl x509 -req -days 365 -in "${ssldir}/ssl.csr" -signkey "${ssldir}/ssl.key" -out "${ssldir}/ssl.crt"
+    chmod 644 "${ssldir}/ssl.crt"
+  fi
+}
+
 configure_nginx
+openssl_generate
