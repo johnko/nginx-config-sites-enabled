@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150202-002348
+SCRIPTVERSION=150202-032029
 
 ######################################################################
 # Variables
@@ -77,6 +77,27 @@ server {
   ssl_ciphers HIGH:!aNULL:!MD5;
   ssl_prefer_server_ciphers on;
   location / {
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_pass http://sources/;
+  }
+}
+EOF
+  #
+  cat >"${sitesavail}/example-transfersh" <<EOF
+# example transfersh
+upstream sources {
+  server localhost:8080;
+}
+server {
+  listen 443 ssl;
+  server_name localhost.my.domain;
+  ssl_certificate ssl/ssl.crt;
+  ssl_certificate_key ssl/ssl.key;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+  ssl_prefer_server_ciphers on;
+  location /upload/ {
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto https;
     proxy_set_header X-Real-IP \$remote_addr;
