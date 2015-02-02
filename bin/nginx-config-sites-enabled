@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150202-032029
+SCRIPTVERSION=150202-052009
 
 ######################################################################
 # Variables
@@ -87,6 +87,7 @@ EOF
   #
   cat >"${sitesavail}/example-transfersh" <<EOF
 # example transfersh
+client_max_body_size 0;
 upstream sources {
   server localhost:8080;
 }
