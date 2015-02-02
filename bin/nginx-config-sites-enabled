@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150202-001800
+SCRIPTVERSION=150202-001918
 
 ######################################################################
 # Variables
@@ -72,8 +72,8 @@ upstream sources {
 server {
   listen 443 ssl;
   server_name localhost.my.domain;
-  ssl_certificate ssl/bundle.crt;
-  ssl_certificate_key ssl/server.key;
+  ssl_certificate ssl/ssl.crt;
+  ssl_certificate_key ssl/ssl.key;
   ssl_ciphers HIGH:!aNULL:!MD5;
   ssl_prefer_server_ciphers on;
   location / {
@@ -83,7 +83,7 @@ server {
   location /path/ {
     proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
-    proxy_pass http://sources/path/;
+    proxy_pass http://sources/;
   }
 }
 EOF
