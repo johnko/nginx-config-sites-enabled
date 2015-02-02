@@ -64,7 +64,7 @@ EOF
   install -d -m 755 "${sitesdir}"
   chmod 755 "${sitesdir}"
   #
-  cat >>"${sitesavail}/example-reverse-tls-proxy" <<EOF
+  cat >"${sitesavail}/example-reverse-tls-proxy" <<EOF
 # example reverse tls proxy
 upstream sources {
   server localhost:8080;
