@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150306-051147
+SCRIPTVERSION=150307-020202
 
 ######################################################################
 # Variables
@@ -91,7 +91,7 @@ server {
   server_name localhost.my.domain;
   ssl_certificate ssl/ssl.crt;
   ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf}
+  include ${tlsconf};
   location / {
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto https;
@@ -112,7 +112,7 @@ server {
   server_name localhost.my.domain;
   ssl_certificate ssl/ssl.crt;
   ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf}
+  include ${tlsconf};
   location /upload/ {
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto https;
@@ -133,7 +133,7 @@ server {
   server_name localhost.my.domain;
   ssl_certificate ssl/ssl.crt;
   ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf}
+  include ${tlsconf};
   location /jkcas/ {
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto https;
