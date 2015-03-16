@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150307-020202
+SCRIPTVERSION=150316-224127
 
 ######################################################################
 # Variables
@@ -101,8 +101,8 @@ server {
 }
 EOF
   #
-  cat >"${sitesavail}/example-transfersh" <<EOF
-# example transfersh
+  cat >"${sitesavail}/example-api" <<EOF
+# example api
 client_max_body_size 0;
 upstream sources {
   server localhost:8080;
@@ -113,28 +113,7 @@ server {
   ssl_certificate ssl/ssl.crt;
   ssl_certificate_key ssl/ssl.key;
   include ${tlsconf};
-  location /upload/ {
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_pass http://sources/;
-  }
-}
-EOF
-  #
-  cat >"${sitesavail}/example-jkcas" <<EOF
-# example jkcas
-client_max_body_size 0;
-upstream sources {
-  server localhost:8080;
-}
-server {
-  listen 443 ssl;
-  server_name localhost.my.domain;
-  ssl_certificate ssl/ssl.crt;
-  ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf};
-  location /jkcas/ {
+  location /api/ {
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Proto https;
     proxy_set_header X-Real-IP \$remote_addr;
