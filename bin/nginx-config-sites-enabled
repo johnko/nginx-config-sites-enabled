@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150316-224127
+SCRIPTVERSION=150325-000556
 
 ######################################################################
 # Variables
@@ -135,7 +135,7 @@ openssl_generate() {
     chmod 600 "${ssldir}/ssl.key"
   fi
   if [ ! -e "${ssldir}/ssl.csr" ]; then
-    yes '' | openssl req -new -key "${ssldir}/ssl.key" -out "${ssldir}/ssl.csr"
+    yes '' | openssl req -sha256 -new -key "${ssldir}/ssl.key" -out "${ssldir}/ssl.csr"
     chmod 600 "${ssldir}/ssl.csr"
   fi
   umask 022
