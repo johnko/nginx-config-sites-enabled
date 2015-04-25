@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150425-080716
+SCRIPTVERSION=150425-081144
 
 ######################################################################
 # Variables
@@ -168,8 +168,8 @@ server {
     proxy_redirect off;
     proxy_pass http://sources;
   }
-  location /api {
-    rewrite /api/(.*) /$1 break;
+  location  /api {
+    rewrite /api/(.*) /\$1 break;
 
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Ssl on;
