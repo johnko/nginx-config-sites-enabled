@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150423-033332
+SCRIPTVERSION=150425-075743
 
 ######################################################################
 # Variables
@@ -142,6 +142,52 @@ server {
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_pass http://sources/;
   }
+}
+EOF
+  #
+  cat >"${sitesavail}/example-couchdb" <<EOF
+# example couchdb
+client_max_body_size 0;
+upstream sources {
+  server localhost:5984;
+}
+server {
+  listen 443 ssl;
+  server_name localhost.my.domain;
+  ssl_certificate ssl/ssl.crt;
+  ssl_certificate_key ssl/ssl.key;
+  include ${tlsconf};
+  location ~ ^/(.*)/_changes {
+    proxy_buffering off;
+
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Ssl on;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_redirect off;
+    proxy_pass http://sources/;
+  }
+  location /api {
+    rewrite /api/(.*) /$1 break;
+
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Ssl on;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_redirect off;
+    proxy_pass http://sources/;
+  }
+  #location / {
+  #  proxy_set_header Host \$host;
+  #  proxy_set_header X-Forwarded-Ssl on;
+  #  proxy_set_header X-Forwarded-Proto https;
+  #  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  #  proxy_set_header X-Real-IP \$remote_addr;
+  #  proxy_redirect off;
+  #  proxy_pass http://sources/;
+  #}
 }
 EOF
 }
