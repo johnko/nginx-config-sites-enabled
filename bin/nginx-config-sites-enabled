@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150425-082817
+SCRIPTVERSION=150425-083644
 
 ######################################################################
 # Variables
@@ -157,7 +157,7 @@ server {
   ssl_certificate ssl/ssl.crt;
   ssl_certificate_key ssl/ssl.key;
   include ${tlsconf};
-  location ~ ^/_session {
+  location ~ ^/(_session|_replicate) {
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Ssl on;
     proxy_set_header X-Forwarded-Proto https;
