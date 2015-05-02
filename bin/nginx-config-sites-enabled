@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150502-082203
+SCRIPTVERSION=150502-101122
 
 ######################################################################
 # Variables
@@ -167,6 +167,7 @@ upstream couchsources {
   server localhost:5984;
 }
 map \$uri \$redirect_uri {
+  ~^/proxy\$    https://localhost.my.domain/proxy/;
   ~^/music\$    https://localhost.my.domain/music/;
   ~^/wiki\$     https://localhost.my.domain/wiki/;
 }
@@ -177,7 +178,12 @@ server {
   ssl_certificate_key ssl/ssl.key;
   include ${tlsconf};
   location ~^/(_session|_replicate|_users) {
+    rewrite  /(.*) /\$1 break;
     include ${couchproxy};
+  }
+  location ~^/proxy/ {
+    rewrite  /proxy/(.*) /$1 break;
+    include /usr/local/etc/nginx/couchproxy.conf;
   }
   location / {
     try_files \$uri \$uri/ @redirect-map;
