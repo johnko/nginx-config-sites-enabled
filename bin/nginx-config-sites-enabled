@@ -182,7 +182,7 @@ server {
     include ${couchproxy};
   }
   location ~^/proxy/ {
-    rewrite  /proxy/(.*) /$1 break;
+    rewrite  /proxy/(.*) /\$1 break;
     include /usr/local/etc/nginx/couchproxy.conf;
   }
   location / {
