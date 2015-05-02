@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150501-035954
+SCRIPTVERSION=150502-082203
 
 ######################################################################
 # Variables
@@ -40,6 +40,7 @@ NGINXCONF=/usr/local/etc/nginx/nginx.conf
 sitesavail="${NGINXCONF%/*}/sites-available"
 sitesdir="${NGINXCONF%/*}/sites-enabled"
 tlsconf="${NGINXCONF%/*}/tls.conf"
+couchproxy="${NGINXCONF%/*}/couchproxy.conf"
 ssldir="${NGINXCONF%/*}/ssl"
 
 configure_nginx() {
@@ -74,6 +75,17 @@ ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA
 ssl_prefer_server_ciphers on;
 EOF
   chmod 644 "${tlsconf}"
+  #
+  cat >"${couchproxy}" <<EOF
+proxy_set_header Host \$host;
+proxy_set_header X-Forwarded-Ssl on;
+proxy_set_header X-Forwarded-Proto https;
+proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+proxy_set_header X-Real-IP \$remote_addr;
+proxy_redirect off;
+proxy_pass http://couchsources;
+EOF
+  chmod 644 "${couchproxy}"
   #
   install -d -m 755 "${sitesavail}"
   chmod 755 "${sitesavail}"
@@ -147,9 +159,16 @@ EOF
   #
   cat >"${sitesavail}/example-couchdb" <<EOF
 # example couchdb
+# things to change:
+#   database
+#   localhost.my.domain
 client_max_body_size 0;
-upstream sources {
+upstream couchsources {
   server localhost:5984;
+}
+map \$uri \$redirect_uri {
+  ~^/music\$    https://localhost.my.domain/music/;
+  ~^/wiki\$     https://localhost.my.domain/wiki/;
 }
 server {
   listen 443 ssl;
@@ -157,47 +176,35 @@ server {
   ssl_certificate ssl/ssl.crt;
   ssl_certificate_key ssl/ssl.key;
   include ${tlsconf};
-  location ~ ^/(_session|_replicate|_users) {
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Ssl on;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_redirect off;
-    proxy_pass http://sources;
+  location ~^/(_session|_replicate|_users) {
+    include ${couchproxy};
   }
-  location ~ ^/api/(.*)/_changes {
-    rewrite   /api/(.*) /\$1 break;
+  location / {
+    try_files \$uri \$uri/ @redirect-map;
+  }
+  location @redirect-map {
+    if (\$redirect_uri) {
+      return 301 \$redirect_uri;
+    }
+  }
+  location ~^/music/(.*)/_changes {
+    rewrite  /music/(.*) /\$1 break;
     proxy_buffering off;
-
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Ssl on;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_redirect off;
-    proxy_pass http://sources;
+    include ${couchproxy};
   }
-  location  /api {
-    rewrite /api/(.*) /\$1 break;
-
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Ssl on;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_redirect off;
-    proxy_pass http://sources;
+  location ~^/music/ {
+    rewrite  /music/(.*) /database/_design/music/_rewrite/\$1 break;
+    include /usr/local/etc/nginx/couchproxy.conf;
   }
-  #location / {
-  #  proxy_set_header Host \$host;
-  #  proxy_set_header X-Forwarded-Ssl on;
-  #  proxy_set_header X-Forwarded-Proto https;
-  #  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-  #  proxy_set_header X-Real-IP \$remote_addr;
-  #  proxy_redirect off;
-  #  proxy_pass http://sources;
-  #}
+  location ~^/wiki/(.*)/_changes {
+    rewrite  /wiki/(.*) /\$1 break;
+    proxy_buffering off;
+    include ${couchproxy};
+  }
+  location ~^/wiki/ {
+    rewrite  /wiki/(.*) /database/_design/wiki/_rewrite/\$1 break;
+    include /usr/local/etc/nginx/couchproxy.conf;
+  }
 }
 EOF
 }
