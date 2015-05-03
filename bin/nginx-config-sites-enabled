@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150502-101122
+SCRIPTVERSION=150503-025614
 
 ######################################################################
 # Variables
@@ -160,16 +160,16 @@ EOF
   cat >"${sitesavail}/example-couchdb" <<EOF
 # example couchdb
 # things to change:
-#   database
 #   localhost.my.domain
 client_max_body_size 0;
 upstream couchsources {
   server localhost:5984;
 }
 map \$uri \$redirect_uri {
-  ~^/proxy\$    https://localhost.my.domain/proxy/;
+  ~^/couch\$    https://localhost.my.domain/couch/;
   ~^/music\$    https://localhost.my.domain/music/;
   ~^/wiki\$     https://localhost.my.domain/wiki/;
+  ~^/\$         https://localhost.my.domain/wiki/;
 }
 server {
   listen 443 ssl;
@@ -181,34 +181,29 @@ server {
     rewrite  /(.*) /\$1 break;
     include ${couchproxy};
   }
-  location ~^/proxy/ {
-    rewrite  /proxy/(.*) /\$1 break;
+  location ~^/couch/ {
+    rewrite  /couch/(.*) /\$1 break;
     include /usr/local/etc/nginx/couchproxy.conf;
+  }
+  location ~^/couch/(.*)/_changes {
+    rewrite  /couch/(.*) /\$1/_changes break;
+    proxy_buffering off;
+    include ${couchproxy};
   }
   location / {
     try_files \$uri \$uri/ @redirect-map;
   }
   location @redirect-map {
     if (\$redirect_uri) {
-      return 301 \$redirect_uri;
+      return 302 \$redirect_uri;
     }
   }
-  location ~^/music/(.*)/_changes {
-    rewrite  /music/(.*) /\$1 break;
-    proxy_buffering off;
-    include ${couchproxy};
-  }
   location ~^/music/ {
-    rewrite  /music/(.*) /database/_design/music/_rewrite/\$1 break;
+    rewrite  /music/(.*) /music/_design/music/_rewrite/\$1 break;
     include /usr/local/etc/nginx/couchproxy.conf;
   }
-  location ~^/wiki/(.*)/_changes {
-    rewrite  /wiki/(.*) /\$1 break;
-    proxy_buffering off;
-    include ${couchproxy};
-  }
   location ~^/wiki/ {
-    rewrite  /wiki/(.*) /database/_design/wiki/_rewrite/\$1 break;
+    rewrite  /wiki/(.*) /wiki/_design/wiki/_rewrite/\$1 break;
     include /usr/local/etc/nginx/couchproxy.conf;
   }
 }
