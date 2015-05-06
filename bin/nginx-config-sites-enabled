@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150503-025614
+SCRIPTVERSION=150506-011856
 
 ######################################################################
 # Variables
@@ -181,14 +181,14 @@ server {
     rewrite  /(.*) /\$1 break;
     include ${couchproxy};
   }
-  location ~^/couch/ {
-    rewrite  /couch/(.*) /\$1 break;
-    include /usr/local/etc/nginx/couchproxy.conf;
-  }
   location ~^/couch/(.*)/_changes {
     rewrite  /couch/(.*) /\$1/_changes break;
     proxy_buffering off;
     include ${couchproxy};
+  }
+  location ~^/couch/ {
+    rewrite  /couch/(.*) /\$1 break;
+    include /usr/local/etc/nginx/couchproxy.conf;
   }
   location / {
     try_files \$uri \$uri/ @redirect-map;
