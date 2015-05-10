@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150506-011856
+SCRIPTVERSION=150510-012624
 
 ######################################################################
 # Variables
@@ -227,7 +227,7 @@ openssl_generate() {
   fi
   umask 022
   if [ ! -e "${ssldir}/ssl.crt" ]; then
-    openssl x509 -req -days 365 -in "${ssldir}/ssl.csr" -signkey "${ssldir}/ssl.key" -out "${ssldir}/ssl.crt"
+    openssl x509 -req -sha256 -days 365 -in "${ssldir}/ssl.csr" -signkey "${ssldir}/ssl.key" -out "${ssldir}/ssl.crt"
     chmod 644 "${ssldir}/ssl.crt"
   fi
 }
