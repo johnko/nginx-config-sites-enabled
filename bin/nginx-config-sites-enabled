@@ -27,9 +27,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 ######################################################################
-# Script version is yymmdd-HHMMSS in UTC, date +%y%m%d-%H%M%S
+# Script version is yymmdd-HHMMSS in UTC, date -u +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150510-012624
+SCRIPTVERSION=150528-205725
 
 ######################################################################
 # Variables
@@ -41,195 +41,234 @@ sitesavail="${NGINXCONF%/*}/sites-available"
 sitesdir="${NGINXCONF%/*}/sites-enabled"
 tlsconf="${NGINXCONF%/*}/tls.conf"
 couchproxy="${NGINXCONF%/*}/couchproxy.conf"
+couchsources="${NGINXCONF%/*}/couchsources.conf"
+dtfcproxy="${NGINXCONF%/*}/dtfcproxy.conf"
+dtfcsources="${NGINXCONF%/*}/dtfcsources.conf"
 ssldir="${NGINXCONF%/*}/ssl"
 
 configure_nginx() {
-  cat >"${NGINXCONF}" <<EOF
-# nginx config file
-user nobody;
-worker_processes 1;
-events {
-  worker_connections 1024;
-}
-http {
-  server_tokens off;
-  include mime.types;
-  default_type application/octet-stream;
-  sendfile on;
-  keepalive_timeout 65;
-  #no include /usr/local/etc/nginx/conf.d/*.conf;
-  include ${sitesdir}/*;
-}
-EOF
-  chmod 644 "${NGINXCONF}"
-  #
-  cat >"${tlsconf}" <<EOF
-# With help from https://mozilla.github.io/server-side-tls/ssl-config-generator/
-ssl_session_timeout 5m;
-ssl_session_cache shared:SSL:50m;
-# Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
-ssl_dhparam ${ssldir}/dhparam.pem;
-# intermediate configuration. tweak to your needs.
-ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
-ssl_prefer_server_ciphers on;
-EOF
-  chmod 644 "${tlsconf}"
-  #
-  cat >"${couchproxy}" <<EOF
-proxy_set_header Host \$host;
-proxy_set_header X-Forwarded-Ssl on;
-proxy_set_header X-Forwarded-Proto https;
-proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-proxy_set_header X-Real-IP \$remote_addr;
-proxy_redirect off;
-proxy_pass http://couchsources;
-EOF
-  chmod 644 "${couchproxy}"
-  #
-  install -d -m 755 "${sitesavail}"
-  chmod 755 "${sitesavail}"
-  #
-  install -d -m 755 "${sitesdir}"
-  chmod 755 "${sitesdir}"
-  #
-  cat >"${sitesavail}/example-reverse-tls-proxy" <<EOF
-# example reverse tls proxy
-upstream sources {
-  server localhost:8080;
-}
-server {
-  listen 443 ssl;
-  server_name localhost.my.domain;
-  ssl_certificate ssl/ssl.crt;
-  ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf};
-  location / {
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_pass http://sources;
-  }
-}
-EOF
-  #
-  cat >"${sitesavail}/example-api" <<EOF
-# example api
-client_max_body_size 0;
-upstream sources {
-  server localhost:8080;
-}
-server {
-  listen 443 ssl;
-  server_name localhost.my.domain;
-  ssl_certificate ssl/ssl.crt;
-  ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf};
-  location /api/ {
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_pass http://sources;
-  }
-}
-EOF
-  #
-  cat >"${sitesavail}/example-basicauth" <<EOF
-# example basic-auth
-client_max_body_size 0;
-upstream sources {
-  server localhost:8080;
-}
-server {
-  listen 443 ssl;
-  server_name localhost.my.domain;
-  ssl_certificate ssl/ssl.crt;
-  ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf};
-  auth_basic           "Please login";
-  auth_basic_user_file /usr/local/etc/nginx/htpasswd;
-  location / {
-    proxy_set_header Host \$host;
-    proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_pass http://sources;
-  }
-}
-EOF
-  #
-  cat >"${sitesavail}/example-couchdb" <<EOF
-# example couchdb
-# things to change:
-#   localhost.my.domain
-client_max_body_size 0;
-upstream couchsources {
-  server localhost:5984;
-}
-map \$uri \$redirect_uri {
-  ~^/couch\$    https://localhost.my.domain/couch/;
-  ~^/music\$    https://localhost.my.domain/music/;
-  ~^/wiki\$     https://localhost.my.domain/wiki/;
-  ~^/\$         https://localhost.my.domain/wiki/;
-}
-server {
-  listen 443 ssl;
-  server_name localhost.my.domain;
-  ssl_certificate ssl/ssl.crt;
-  ssl_certificate_key ssl/ssl.key;
-  include ${tlsconf};
-  location ~^/(_session|_replicate|_users) {
-    rewrite  /(.*) /\$1 break;
-    include ${couchproxy};
-  }
-  location ~^/couch/(.*)/_changes {
-    rewrite  /couch/(.*) /\$1/_changes break;
-    proxy_buffering off;
-    include ${couchproxy};
-  }
-  location ~^/couch/ {
-    rewrite  /couch/(.*) /\$1 break;
-    include /usr/local/etc/nginx/couchproxy.conf;
-  }
-  location / {
-    try_files \$uri \$uri/ @redirect-map;
-  }
-  location @redirect-map {
-    if (\$redirect_uri) {
-      return 302 \$redirect_uri;
+    ########## ########## ########## ##########
+    cat >"${NGINXCONF}" <<EOF
+    # nginx config file
+    user nobody;
+    worker_processes 1;
+    events {
+        worker_connections 1024;
     }
-  }
-  location ~^/music/ {
-    rewrite  /music/(.*) /music/_design/music/_rewrite/\$1 break;
-    include /usr/local/etc/nginx/couchproxy.conf;
-  }
-  location ~^/wiki/ {
-    rewrite  /wiki/(.*) /wiki/_design/wiki/_rewrite/\$1 break;
-    include /usr/local/etc/nginx/couchproxy.conf;
-  }
-}
+    http {
+        server_tokens off;
+        include mime.types;
+        default_type application/octet-stream;
+        sendfile on;
+        keepalive_timeout 65;
+        #no include /usr/local/etc/nginx/conf.d/*.conf;
+        include ${sitesdir}/*;
+    }
 EOF
+    chmod 644 "${NGINXCONF}"
+    ########## ########## ########## ##########
+    cat >"${tlsconf}" <<EOF
+    # With help from https://mozilla.github.io/server-side-tls/ssl-config-generator/
+    ssl_session_timeout 5m;
+    ssl_session_cache shared:SSL:50m;
+    # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
+    ssl_dhparam ${ssldir}/dhparam.pem;
+    # intermediate configuration. tweak to your needs.
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
+    ssl_prefer_server_ciphers on;
+EOF
+    chmod 644 "${tlsconf}"
+    ########## ########## ########## ##########
+    cat >"${couchproxy}" <<EOF
+    proxy_buffering off;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Ssl on;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_redirect off;
+    proxy_pass http://couchsources;
+EOF
+    chmod 644 "${couchproxy}"
+    ########## ########## ########## ##########
+    cat >"${dtfcproxy}" <<EOF
+    location ~^/dtfc/ {
+        rewrite  /dtfc/(.*) /\$1 break;
+#        proxy_buffering off;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-Ssl on;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_redirect off;
+        proxy_pass http://dtfcsources;
+    }
+EOF
+    chmod 644 "${dtfcproxy}"
+    ########## ########## ########## ##########
+    cat >"${couchsources}" <<EOF
+    upstream couchsources {
+        server localhost:5984;
+    }
+EOF
+    chmod 644 "${couchsources}"
+    ########## ########## ########## ##########
+    cat >"${dtfcsources}" <<EOF
+    upstream dtfcsources {
+        server localhost:8080;
+    }
+EOF
+    chmod 644 "${dtfcsources}"
+    ########## ########## ########## ##########
+    install -d -m 755 "${sitesavail}"
+    chmod 755 "${sitesavail}"
+    ########## ########## ########## ##########
+    install -d -m 755 "${sitesdir}"
+    chmod 755 "${sitesdir}"
+    ########## ########## ########## ##########
+    cat >"${sitesavail}/example-reverse-tls-proxy" <<EOF
+    # example reverse tls proxy
+    upstream sources {
+        server localhost:8080;
+    }
+    server {
+        listen 443 ssl;
+        server_name localhost.my.domain;
+        ssl_certificate ssl/ssl.crt;
+        ssl_certificate_key ssl/ssl.key;
+        include ${tlsconf};
+        location / {
+            proxy_set_header Host \$host;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_pass http://sources;
+        }
+    }
+EOF
+    ########## ########## ########## ##########
+    cat >"${sitesavail}/example-api" <<EOF
+    # example api
+    client_max_body_size 0;
+    upstream sources {
+        server localhost:8080;
+    }
+    server {
+        listen 443 ssl;
+        server_name localhost.my.domain;
+        ssl_certificate ssl/ssl.crt;
+        ssl_certificate_key ssl/ssl.key;
+        include ${tlsconf};
+        location /api/ {
+            proxy_set_header Host \$host;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_pass http://sources;
+        }
+    }
+EOF
+    ########## ########## ########## ##########
+    cat >"${sitesavail}/example-basicauth" <<EOF
+    # example basic-auth
+    client_max_body_size 0;
+    upstream sources {
+        server localhost:8080;
+    }
+    server {
+        listen 443 ssl;
+        server_name localhost.my.domain;
+        ssl_certificate ssl/ssl.crt;
+        ssl_certificate_key ssl/ssl.key;
+        include ${tlsconf};
+        auth_basic           "Please login";
+        auth_basic_user_file /usr/local/etc/nginx/htpasswd;
+        location / {
+            proxy_set_header Host \$host;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_pass http://sources;
+        }
+    }
+EOF
+    ########## ########## ########## ##########
+    cat >"${sitesavail}/example-couchdb" <<EOF
+    # example couchdb
+    # things to change:
+    #   localhost.my.domain
+    client_max_body_size 0;
+    include ${couchsources};
+    include ${dtfcsources};
+    map \$uri \$redirect_uri {
+        ~^/couch\$    https://localhost.my.domain/couch/;
+        ~^/music\$    https://localhost.my.domain/music/;
+        ~^/wiki\$     https://localhost.my.domain/wiki/;
+        ~^/\$         https://localhost.my.domain/wiki/;
+    }
+    server {
+        listen 443 ssl;
+        server_name localhost.my.domain;
+        ssl_certificate ssl/ssl.crt;
+        ssl_certificate_key ssl/ssl.key;
+        include ${tlsconf};
+        location ~^/(_session|_replicate|_users) {
+            rewrite  /(.*) /\$1 break;
+            include ${couchproxy};
+        }
+#        location ~^/couch/(.*)/_changes {
+#            rewrite  /couch/(.*) /\$1/_changes break;
+#            proxy_buffering off;
+#            include ${couchproxy};
+#        }
+        location ~^/couch/ {
+            rewrite  /couch/(.*) /\$1 break;
+            include ${couchproxy};
+        }
+        location / {
+            try_files \$uri \$uri/ @redirect-map;
+        }
+        location @redirect-map {
+            if (\$redirect_uri) {
+                return 302 \$redirect_uri;
+            }
+        }
+        location  ~^/movies/ {
+            rewrite /movies/(.*) /movies/_design/movies/_rewrite/\$1 break;
+            include ${couchproxy};
+        }
+        location  ~^/music/ {
+            rewrite /music/(.*) /music/_design/music/_rewrite/\$1 break;
+            include ${couchproxy};
+        }
+        location  ~^/wiki/ {
+            rewrite /wiki/(.*) /wiki/_design/wiki/_rewrite/\$1 break;
+            include ${couchproxy};
+        }
+        include ${dtfcproxy};
+    }
+EOF
+    ########## ########## ########## ##########
 }
 
 openssl_generate() {
-  [ -d "${ssldir}" ] || install -d -m 755 "${ssldir}"
-  umask 077
-  if [ ! -e "${ssldir}/dhparam.pem" ]; then
-    openssl dhparam -out "${ssldir}/dhparam.pem" 2048
-    chmod 600 "${ssldir}/dhparam.pem"
-  fi
-  if [ ! -e "${ssldir}/ssl.key" ]; then
-    openssl genrsa -out "${ssldir}/ssl.key" 4096
-    chmod 600 "${ssldir}/ssl.key"
-  fi
-  if [ ! -e "${ssldir}/ssl.csr" ]; then
-    yes '' | openssl req -sha256 -new -key "${ssldir}/ssl.key" -out "${ssldir}/ssl.csr"
-    chmod 600 "${ssldir}/ssl.csr"
-  fi
-  umask 022
-  if [ ! -e "${ssldir}/ssl.crt" ]; then
-    openssl x509 -req -sha256 -days 365 -in "${ssldir}/ssl.csr" -signkey "${ssldir}/ssl.key" -out "${ssldir}/ssl.crt"
-    chmod 644 "${ssldir}/ssl.crt"
-  fi
+    [ -d "${ssldir}" ] || install -d -m 755 "${ssldir}"
+    umask 077
+    if [ ! -e "${ssldir}/dhparam.pem" ]; then
+        openssl dhparam -out "${ssldir}/dhparam.pem" 2048
+        chmod 600 "${ssldir}/dhparam.pem"
+    fi
+    if [ ! -e "${ssldir}/ssl.key" ]; then
+        openssl genrsa -out "${ssldir}/ssl.key" 4096
+        chmod 600 "${ssldir}/ssl.key"
+    fi
+    if [ ! -e "${ssldir}/ssl.csr" ]; then
+        yes '' | openssl req -sha256 -new -key "${ssldir}/ssl.key" -out "${ssldir}/ssl.csr"
+        chmod 600 "${ssldir}/ssl.csr"
+    fi
+    umask 022
+    if [ ! -e "${ssldir}/ssl.crt" ]; then
+        openssl x509 -req -sha256 -days 365 -in "${ssldir}/ssl.csr" -signkey "${ssldir}/ssl.key" -out "${ssldir}/ssl.crt"
+        chmod 644 "${ssldir}/ssl.crt"
+    fi
 }
 
 configure_nginx
