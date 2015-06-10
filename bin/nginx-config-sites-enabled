@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date -u +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150610-050413
+SCRIPTVERSION=150610-072339
 
 ######################################################################
 # Variables
@@ -48,6 +48,12 @@ hordephp="${NGINXCONF%/*}/hordephp.conf"
 ssldir="${NGINXCONF%/*}/ssl"
 
 configure_nginx() {
+    ########## ########## ########## ##########
+    install -d -m 755 "${sitesavail}"
+    chmod 755 "${sitesavail}"
+    ########## ########## ########## ##########
+    install -d -m 755 "${sitesdir}"
+    chmod 755 "${sitesdir}"
     ########## ########## ########## ##########
     cat >"${NGINXCONF}" <<EOF
     # nginx config file
@@ -134,12 +140,6 @@ EOF
     include fastcgi_params;
 EOF
     chmod 644 "${hordephp}"
-    ########## ########## ########## ##########
-    install -d -m 755 "${sitesavail}"
-    chmod 755 "${sitesavail}"
-    ########## ########## ########## ##########
-    install -d -m 755 "${sitesdir}"
-    chmod 755 "${sitesdir}"
     ########## ########## ########## ##########
     cat >"${sitesavail}/example-reverse-tls-proxy" <<EOF
     # example reverse tls proxy
