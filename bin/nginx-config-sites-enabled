@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date -u +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150528-205725
+SCRIPTVERSION=150610-042114
 
 ######################################################################
 # Variables
@@ -44,6 +44,7 @@ couchproxy="${NGINXCONF%/*}/couchproxy.conf"
 couchsources="${NGINXCONF%/*}/couchsources.conf"
 dtfcproxy="${NGINXCONF%/*}/dtfcproxy.conf"
 dtfcsources="${NGINXCONF%/*}/dtfcsources.conf"
+hordephp="${NGINXCONF%/*}/hordephp.conf"
 ssldir="${NGINXCONF%/*}/ssl"
 
 configure_nginx() {
@@ -120,6 +121,19 @@ EOF
     }
 EOF
     chmod 644 "${dtfcsources}"
+    ########## ########## ########## ##########
+    cat >"${hordephp}" <<EOF
+    #fastcgi_split_path_info ^(.+?.php)(.*)\$;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_split_path_info ^(.+\.php)(/.+)\$;
+    fastcgi_param  PATH_INFO        \$fastcgi_path_info;
+    fastcgi_param  PATH_TRANSLATED  \$document_root\$fastcgi_path_info;
+    fastcgi_index  index.php;
+    fastcgi_param  HTTPS            \$php_https;
+    fastcgi_param  SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
+    include fastcgi_params;
+EOF
+    chmod 644 "${hordephp}"
     ########## ########## ########## ##########
     install -d -m 755 "${sitesavail}"
     chmod 755 "${sitesavail}"
@@ -244,6 +258,35 @@ EOF
             include ${couchproxy};
         }
         include ${dtfcproxy};
+    }
+EOF
+    ########## ########## ########## ##########
+    cat >"${sitesavail}/example-horde" <<EOF
+    # example horde
+    # things to change:
+    #   localhost.my.domain
+    client_max_body_size 0;
+    server {
+        listen 443 ssl;
+        server_name localhost.my.domain;
+        ssl_certificate ssl/ssl.crt;
+        ssl_certificate_key ssl/ssl.key;
+        include ${tlsconf};
+        root /usr/local/www;
+        index index.php index.html index.htm;
+        location ~ /\.ht {
+            deny all;
+        }
+        location ~ \.php\$ {
+            if (!-f \$document_root\$fastcgi_script_name) {
+                return 404;
+            }
+            include ${hordephp};
+        }
+        location /Microsoft-Server-ActiveSync {
+            alias /usr/local/www/horde/rpc.php;
+            include ${hordephp};
+        }
     }
 EOF
     ########## ########## ########## ##########
