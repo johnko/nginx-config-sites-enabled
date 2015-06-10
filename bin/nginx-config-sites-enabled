@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date -u +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150610-045115
+SCRIPTVERSION=150610-050413
 
 ######################################################################
 # Variables
@@ -124,7 +124,7 @@ EOF
     ########## ########## ########## ##########
     cat >"${hordephp}" <<EOF
     #fastcgi_split_path_info ^(.+?.php)(.*)\$;
-    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_pass   127.0.0.1:9000;
     fastcgi_split_path_info ^(.+\.php)(/.+)\$;
     fastcgi_param  PATH_INFO        \$fastcgi_path_info;
     fastcgi_param  PATH_TRANSLATED  \$document_root\$fastcgi_path_info;
