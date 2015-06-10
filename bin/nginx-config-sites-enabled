@@ -266,6 +266,7 @@ EOF
     # things to change:
     #   localhost.my.domain
     client_max_body_size 0;
+    map \$scheme \$php_https { https on; http off; }
     server {
         listen 443 ssl;
         server_name localhost.my.domain;
