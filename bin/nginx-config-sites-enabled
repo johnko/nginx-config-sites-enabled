@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date -u +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150610-072339
+SCRIPTVERSION=150612-051015
 
 ######################################################################
 # Variables
@@ -291,6 +291,40 @@ EOF
     }
 EOF
     ########## ########## ########## ##########
+    cat >"${sitesavail}/example-baikal" <<EOF
+    # example baikal
+    # things to change:
+    #   localhost.my.domain
+    client_max_body_size 0;
+    map \$scheme \$php_https { https on; http off; }
+    server {
+        listen 443 ssl;
+        server_name localhost.my.domain;
+        ssl_certificate ssl/ssl.crt;
+        ssl_certificate_key ssl/ssl.key;
+        include ${tlsconf};
+        root /usr/local/www/baikal;
+        index index.php;
+        rewrite ^/.well-known/caldav /cal.php redirect;
+        rewrite ^/.well-known/carddav /card.php redirect;
+        charset utf-8;
+        location ~ /(\.ht|Core|Specific) {
+            deny all;
+            return 404;
+        }
+        location ~ ^(.+\.php)(.*)\$ {
+            try_files \$fastcgi_script_name =404;
+            fastcgi_split_path_info  ^(.+\.php)(.*)\$;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_param  PATH_INFO        \$fastcgi_path_info;
+            fastcgi_param  PATH_TRANSLATED  \$document_root\$fastcgi_path_info;
+            fastcgi_index  index.php;
+            fastcgi_param  HTTPS            \$php_https;
+            fastcgi_param  SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }
+EOF
 }
 
 openssl_generate() {
