@@ -29,7 +29,7 @@
 ######################################################################
 # Script version is yymmdd-HHMMSS in UTC, date -u +%y%m%d-%H%M%S
 ######################################################################
-SCRIPTVERSION=150612-051015
+SCRIPTVERSION=150612-053806
 
 ######################################################################
 # Variables
@@ -303,7 +303,7 @@ EOF
         ssl_certificate ssl/ssl.crt;
         ssl_certificate_key ssl/ssl.key;
         include ${tlsconf};
-        root /usr/local/www/baikal;
+        root /usr/local/www/baikal/html;
         index index.php;
         rewrite ^/.well-known/caldav /cal.php redirect;
         rewrite ^/.well-known/carddav /card.php redirect;
