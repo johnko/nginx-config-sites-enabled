@@ -40,9 +40,8 @@ NGINXCONF=/usr/local/etc/nginx/nginx.conf
 sitesavail="${NGINXCONF%/*}/sites-available"
 sitesdir="${NGINXCONF%/*}/sites-enabled"
 tlsconf="${NGINXCONF%/*}/tls.conf"
-couchproxy="${NGINXCONF%/*}/couchproxy.conf"
+proxypass="${NGINXCONF%/*}/proxypass.conf"
 couchsources="${NGINXCONF%/*}/couchsources.conf"
-dtfcproxy="${NGINXCONF%/*}/dtfcproxy.conf"
 dtfcsources="${NGINXCONF%/*}/dtfcsources.conf"
 hordephp="${NGINXCONF%/*}/hordephp.conf"
 ssldir="${NGINXCONF%/*}/ssl"
@@ -87,7 +86,7 @@ EOF
 EOF
     chmod 644 "${tlsconf}"
     ########## ########## ########## ##########
-    cat >"${couchproxy}" <<EOF
+    cat >"${proxypass}" <<EOF
     proxy_buffering off;
     proxy_set_header Host \$host;
     proxy_set_header X-Forwarded-Ssl on;
@@ -95,24 +94,8 @@ EOF
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_redirect off;
-    proxy_pass http://couchsources;
 EOF
-    chmod 644 "${couchproxy}"
-    ########## ########## ########## ##########
-    cat >"${dtfcproxy}" <<EOF
-    location ~^/dtfc/ {
-        rewrite  /dtfc/(.*) /\$1 break;
-#        proxy_buffering off;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Forwarded-Ssl on;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_redirect off;
-        proxy_pass http://dtfcsources;
-    }
-EOF
-    chmod 644 "${dtfcproxy}"
+    chmod 644 "${proxypass}"
     ########## ########## ########## ##########
     cat >"${couchsources}" <<EOF
     upstream couchsources {
@@ -226,16 +209,19 @@ EOF
         include ${tlsconf};
         location ~^/(_session|_replicate|_users) {
             rewrite  /(.*) /\$1 break;
-            include ${couchproxy};
+            include ${proxypass};
+            proxy_pass http://couchsources;
         }
 #        location ~^/couch/(.*)/_changes {
 #            rewrite  /couch/(.*) /\$1/_changes break;
 #            proxy_buffering off;
-#            include ${couchproxy};
+#            include ${proxypass};
+#            proxy_pass http://couchsources;
 #        }
         location ~^/couch/ {
             rewrite  /couch/(.*) /\$1 break;
-            include ${couchproxy};
+            include ${proxypass};
+            proxy_pass http://couchsources;
         }
         location / {
             try_files \$uri \$uri/ @redirect-map;
@@ -247,17 +233,39 @@ EOF
         }
         location  ~^/movies/ {
             rewrite /movies/(.*) /movies/_design/movies/_rewrite/\$1 break;
-            include ${couchproxy};
+            include ${proxypass};
+            proxy_pass http://couchsources;
         }
         location  ~^/music/ {
             rewrite /music/(.*) /music/_design/music/_rewrite/\$1 break;
-            include ${couchproxy};
+            include ${proxypass};
+            proxy_pass http://couchsources;
         }
         location  ~^/wiki/ {
             rewrite /wiki/(.*) /wiki/_design/wiki/_rewrite/\$1 break;
-            include ${couchproxy};
+            include ${proxypass};
+            proxy_pass http://couchsources;
         }
-        include ${dtfcproxy};
+        location ~^/dtfc/ {
+            rewrite  /dtfc/(.*) /\$1 break;
+            include ${proxypass};
+            proxy_pass http://dtfcsources;
+        }
+#        location ~^/explore/ {
+#            rewrite  /explore/(.*) /explore/\$1 break;
+#            include ${proxypass};
+#            proxy_pass http://gitlabsources;
+#        }
+#        location  ~^/users/ {
+#            rewrite /users/(.*) /users/\$1 break;
+#            include ${proxypass};
+#            proxy_pass http://gitlabsources;
+#        }
+#        location  ~^/groups/ {
+#            rewrite /groups/(.*) /groups/\$1 break;
+#            include ${proxypass};
+#            proxy_pass http://gitlabsources;
+#        }
     }
 EOF
     ########## ########## ########## ##########
