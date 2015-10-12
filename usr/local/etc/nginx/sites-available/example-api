@@ -9,10 +9,10 @@ server {
     ssl_certificate ssl/ssl.crt;
     ssl_certificate_key ssl/ssl.key;
     include /usr/local/etc/nginx/tls.conf;
+    access_log  /var/log/nginx-ssl-access.log combined;
+    error_log   /var/log/nginx-ssl-error.log  combined;
     location /api/ {
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Real-IP $remote_addr;
+        include /usr/local/etc/nginx/proxypass.conf;
         proxy_pass http://sources;
     }
 }
