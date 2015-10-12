@@ -1,0 +1,29 @@
+#!/bin/sh
+
+SSLDIR=/usr/local/etc/nginx/ssl
+
+if [ ! -d "${SSLDIR}" ]; then
+    install -d -m 755 "${SSLDIR}"
+fi
+
+umask 077
+
+if [ ! -e "${SSLDIR}/dhparam.pem" ]; then
+    openssl dhparam -out "${SSLDIR}/dhparam.pem" 2048
+    chmod 600 "${SSLDIR}/dhparam.pem"
+fi
+if [ ! -e "${SSLDIR}/ssl.key" ]; then
+    openssl genrsa -out "${SSLDIR}/ssl.key" 4096
+    chmod 600 "${SSLDIR}/ssl.key"
+fi
+if [ ! -e "${SSLDIR}/ssl.csr" ]; then
+    yes '' | openssl req -sha256 -new -key "${SSLDIR}/ssl.key" -out "${SSLDIR}/ssl.csr"
+    chmod 600 "${SSLDIR}/ssl.csr"
+fi
+
+umask 022
+
+if [ ! -e "${SSLDIR}/ssl.crt" ]; then
+    openssl x509 -req -sha256 -days 365 -in "${SSLDIR}/ssl.csr" -signkey "${SSLDIR}/ssl.key" -out "${SSLDIR}/ssl.crt"
+    chmod 644 "${SSLDIR}/ssl.crt"
+fi

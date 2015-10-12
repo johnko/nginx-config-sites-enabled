@@ -1,0 +1,27 @@
+# example horde
+# things to change:
+#   localhost.my.domain
+client_max_body_size 0;
+map $scheme $php_https { https on; http off; }
+server {
+    listen 443 ssl;
+    server_name localhost.my.domain;
+    ssl_certificate ssl/ssl.crt;
+    ssl_certificate_key ssl/ssl.key;
+    include /usr/local/etc/nginx/tls.conf;
+    root /usr/local/www;
+    index index.php index.html index.htm;
+    location ~ /\.ht {
+        deny all;
+    }
+    location ~ \.php$ {
+        if (!-f $document_root$fastcgi_script_name) {
+            return 404;
+        }
+        include /usr/local/etc/nginx/hordephp.conf;
+    }
+    location /Microsoft-Server-ActiveSync {
+        alias /usr/local/www/horde/rpc.php;
+        include /usr/local/etc/nginx/hordephp.conf;
+    }
+}

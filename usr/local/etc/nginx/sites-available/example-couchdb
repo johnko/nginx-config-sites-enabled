@@ -1,0 +1,68 @@
+# example couchdb
+# things to change:
+#   localhost.my.domain
+client_max_body_size 0;
+upstream couchsources {
+    server localhost:5984;
+}
+upstream dtfcsources {
+    server localhost:8080;
+}
+map $uri $redirect_uri {
+    ~^/couch$    https://localhost.my.domain/couch/;
+    ~^/movies$   https://localhost.my.domain/movies/;
+    ~^/music$    https://localhost.my.domain/music/;
+    ~^/wiki$     https://localhost.my.domain/wiki/;
+    ~^/$         https://localhost.my.domain/wiki/;
+}
+server {
+    listen 443 ssl;
+    server_name localhost.my.domain;
+    ssl_certificate ssl/ssl.crt;
+    ssl_certificate_key ssl/ssl.key;
+    include /usr/local/etc/nginx/tls.conf;
+    location ~^/(_session|_replicate|_users) {
+        rewrite  /(.*) /$1 break;
+        include /usr/local/etc/nginx/proxypass.conf;
+        proxy_pass http://couchsources;
+    }
+#    location ~^/couch/(.*)/_changes {
+#        rewrite  /couch/(.*) /$1/_changes break;
+#        proxy_buffering off;
+#        include /usr/local/etc/nginx/proxypass.conf;
+#        proxy_pass http://couchsources;
+#    }
+    location ~^/couch/ {
+        rewrite  /couch/(.*) /$1 break;
+        include /usr/local/etc/nginx/proxypass.conf;
+        proxy_pass http://couchsources;
+    }
+    location  ~^/movies/ {
+        rewrite /movies/(.*) /movies/_design/movies/_rewrite/$1 break;
+        include /usr/local/etc/nginx/proxypass.conf;
+        proxy_pass http://couchsources;
+    }
+    location  ~^/music/ {
+        rewrite /music/(.*) /music/_design/music/_rewrite/$1 break;
+        include /usr/local/etc/nginx/proxypass.conf;
+        proxy_pass http://couchsources;
+    }
+    location  ~^/wiki/ {
+        rewrite /wiki/(.*) /wiki/_design/wiki/_rewrite/$1 break;
+        include /usr/local/etc/nginx/proxypass.conf;
+        proxy_pass http://couchsources;
+    }
+    location ~^/dtfc/ {
+        rewrite  /dtfc/(.*) /$1 break;
+        include /usr/local/etc/nginx/proxypass.conf;
+        proxy_pass http://dtfcsources;
+    }
+    location / {
+        try_files $uri $uri/ @redirect-map;
+    }
+    location @redirect-map {
+        if ($redirect_uri) {
+            return 302 $redirect_uri;
+        }
+    }
+}

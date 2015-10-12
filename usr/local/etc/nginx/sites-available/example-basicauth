@@ -1,0 +1,20 @@
+# example basic-auth
+client_max_body_size 0;
+upstream sources {
+    server localhost:8080;
+}
+server {
+    listen 443 ssl;
+    server_name localhost.my.domain;
+    ssl_certificate ssl/ssl.crt;
+    ssl_certificate_key ssl/ssl.key;
+    include /usr/local/etc/nginx/tls.conf;
+    auth_basic           "Please login";
+    auth_basic_user_file /usr/local/etc/nginx/htpasswd;
+    location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://sources;
+    }
+}
