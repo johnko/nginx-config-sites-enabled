@@ -10,7 +10,7 @@ server {
     ssl_certificate_key ssl/ssl.key;
     include /usr/local/etc/nginx/tls.conf;
     access_log  /var/log/nginx-ssl-access.log realip;
-    error_log   /var/log/nginx-ssl-error.log  realip;
+    error_log   /var/log/nginx-ssl-error.log;
     auth_basic           "Please login";
     auth_basic_user_file /usr/local/etc/nginx/htpasswd;
     location / {
