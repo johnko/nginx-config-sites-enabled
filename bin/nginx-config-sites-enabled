@@ -1,6 +1,6 @@
 #!/bin/sh
 
-REPODIR=/root/git/nginx-config-sites-enabled
+REPODIR=~/git/nginx-config-sites-enabled
 ETCNGINXDIR=/usr/local/etc/nginx
 
 install -d -m 755 ${ETCNGINXDIR}
