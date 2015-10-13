@@ -9,8 +9,8 @@ server {
     ssl_certificate ssl/ssl.crt;
     ssl_certificate_key ssl/ssl.key;
     include /usr/local/etc/nginx/tls.conf;
-    access_log  /var/log/nginx-ssl-access.log combined;
-    error_log   /var/log/nginx-ssl-error.log  combined;
+    access_log  /var/log/nginx-ssl-access.log realip;
+    error_log   /var/log/nginx-ssl-error.log  realip;
     location /api/ {
         include /usr/local/etc/nginx/proxypass.conf;
         proxy_pass http://sources;

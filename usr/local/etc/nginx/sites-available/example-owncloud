@@ -16,8 +16,8 @@ server {
     ssl_certificate ssl/ssl.crt;
     ssl_certificate_key ssl/ssl.key;
     include /usr/local/etc/nginx/tls.conf;
-    access_log  /var/log/nginx-ssl-access.log combined;
-    error_log   /var/log/nginx-ssl-error.log  combined;
+    access_log  /var/log/nginx-ssl-access.log realip;
+    error_log   /var/log/nginx-ssl-error.log  realip;
     # Path to the root of your installation
     root /usr/local/www/owncloud;
     # set max upload size
