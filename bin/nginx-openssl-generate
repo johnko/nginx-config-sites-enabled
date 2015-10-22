@@ -1,6 +1,7 @@
 #!/bin/sh
 
-SSLDIR=/usr/local/etc/nginx/ssl
+NGINXDIR=/usr/local/etc/nginx
+  SSLDIR=/usr/local/etc/nginx/ssl
 
 if [ ! -d "${SSLDIR}" ]; then
     install -d -m 755 "${SSLDIR}"
@@ -8,9 +9,9 @@ fi
 
 umask 077
 
-if [ ! -e "${SSLDIR}/dhparam.pem" ]; then
-    openssl dhparam -out "${SSLDIR}/dhparam.pem" 2048
-    chmod 600 "${SSLDIR}/dhparam.pem"
+if [ ! -e "${NGINXDIR}/dhparam.pem" ]; then
+    openssl dhparam -out "${NGINXDIR}/dhparam.pem" 2048
+    chmod 600 "${NGINXDIR}/dhparam.pem"
 fi
 if [ ! -e "${SSLDIR}/ssl.key" ]; then
     openssl genrsa -out "${SSLDIR}/ssl.key" 4096
