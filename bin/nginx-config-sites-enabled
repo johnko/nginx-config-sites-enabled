@@ -7,7 +7,7 @@ install -d -m 755 ${ETCNGINXDIR}
 
 for i in `ls -1 ${REPODIR}${ETCNGINXDIR}` ; do
     if [ -f     ${REPODIR}${ETCNGINXDIR}/${i} ]; then
-        install -m 644 \
+        install -C -m 644 \
                 ${REPODIR}${ETCNGINXDIR}/${i} \
                           ${ETCNGINXDIR}/${i}
     fi
@@ -18,7 +18,7 @@ install -d -m 755         ${ETCNGINXDIR}/sites-available
 
 for i in `ls -1 ${REPODIR}${ETCNGINXDIR}/sites-available` ; do
     if [ -f     ${REPODIR}${ETCNGINXDIR}/sites-available/${i} ]; then
-        install -m 644 \
+        install -C -m 644 \
                 ${REPODIR}${ETCNGINXDIR}/sites-available/${i} \
                           ${ETCNGINXDIR}/sites-available/${i}
     fi
