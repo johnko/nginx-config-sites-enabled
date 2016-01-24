@@ -5,7 +5,7 @@ NGINXDIR=/usr/local/etc/nginx
   SSLDIR=/usr/local/etc/nginx/ssl
 
 if [ "x" = "x${FQDN}" ]; then
-    FQDN=ssl
+    FQDN=nodomain
 fi
 
 if [ ! -d "${SSLDIR}" ]; then
