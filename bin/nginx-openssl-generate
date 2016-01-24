@@ -1,7 +1,12 @@
 #!/bin/sh
 
+FQDN=$1
 NGINXDIR=/usr/local/etc/nginx
   SSLDIR=/usr/local/etc/nginx/ssl
+
+if [ "x" = "x${FQDN}" ]; then
+    FQDN=ssl
+fi
 
 if [ ! -d "${SSLDIR}" ]; then
     install -d -m 755 "${SSLDIR}"
@@ -13,18 +18,18 @@ if [ ! -e "${NGINXDIR}/dhparam.pem" ]; then
     openssl dhparam -out "${NGINXDIR}/dhparam.pem" 2048
     chmod 600 "${NGINXDIR}/dhparam.pem"
 fi
-if [ ! -e "${SSLDIR}/ssl.key" ]; then
-    openssl genrsa -out "${SSLDIR}/ssl.key" 4096
-    chmod 600 "${SSLDIR}/ssl.key"
+if [ ! -e "${SSLDIR}/${FQDN}.key" ]; then
+    openssl genrsa -out "${SSLDIR}/${FQDN}.key" 2048
+    chmod 600 "${SSLDIR}/${FQDN}.key"
 fi
-if [ ! -e "${SSLDIR}/ssl.csr" ]; then
-    yes '' | openssl req -sha256 -new -key "${SSLDIR}/ssl.key" -out "${SSLDIR}/ssl.csr"
-    chmod 600 "${SSLDIR}/ssl.csr"
+if [ ! -e "${SSLDIR}/${FQDN}.csr" ]; then
+    yes '' | openssl req -sha256 -new -key "${SSLDIR}/${FQDN}.key" -out "${SSLDIR}/${FQDN}.csr"
+    chmod 600 "${SSLDIR}/${FQDN}.csr"
 fi
 
 umask 022
 
-if [ ! -e "${SSLDIR}/ssl.crt" ]; then
-    openssl x509 -req -sha256 -days 365 -in "${SSLDIR}/ssl.csr" -signkey "${SSLDIR}/ssl.key" -out "${SSLDIR}/ssl.crt"
-    chmod 644 "${SSLDIR}/ssl.crt"
+if [ ! -e "${SSLDIR}/${FQDN}.crt" ]; then
+    openssl x509 -req -sha256 -days 365 -in "${SSLDIR}/${FQDN}.csr" -signkey "${SSLDIR}/${FQDN}.key" -out "${SSLDIR}/${FQDN}.crt"
+    chmod 644 "${SSLDIR}/${FQDN}.crt"
 fi
