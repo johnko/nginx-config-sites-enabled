@@ -13,7 +13,7 @@ for i in `ls -1 ${REPODIR}${ETCNGINXDIR}` ; do
     fi
 done
 
-install -d -m 755         ${ETCNGINXDIR}/sites-enabled
+install -d -m 755         ${ETCNGINXDIR}/enabled
 install -d -m 755         ${ETCNGINXDIR}/sites-available
 
 for i in `ls -1 ${REPODIR}${ETCNGINXDIR}/sites-available` ; do
